@@ -1,2 +1,2 @@
 # JsonDecoder
-Json to Memo
+Json to Memo(a kind of class like dict in Python)
