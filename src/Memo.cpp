@@ -262,7 +262,7 @@ void Memo::operator=(const Memo& memo)
 bool Memo::has(const std::string& key) const
 {
     size_t pos = key.find('.');
-    if (pos != std::string::npos)
+    if (pos == std::string::npos)
     {
         return _memos.find(key) != _memos.end();
     }
