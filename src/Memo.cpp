@@ -2,45 +2,46 @@
 #include <stack>
 
 
-Memo::Memo(){}
+Memo::Memo(const Type type)
+    : _type(type) {}
 
-Memo::Memo(const Memo& memo)
+Memo::Memo(const Memo &memo)
 {
-    _memos = memo._memos;
+    _dict = memo._dict;
+    _list = memo._list;
     _value = memo._value;
     _svalue = memo._svalue;
     _type = memo._type;
-    _node_type = memo._node_type;
 }
 
-Memo::Memo(const Memo&& memo)
+Memo::Memo(const Memo &&memo)
 {
-    _memos = std::move(memo._memos);
+    _dict = std::move(memo._dict);
+    _list = std::move(memo._list);
     _value = std::move(memo._value);
     _svalue = std::move(memo._svalue);
     _type = std::move(memo._type);
-    _node_type = std::move(memo._node_type);
 }
 
-Memo::Memo(const bool& value)
+Memo::Memo(const bool value)
 {
     _type = Type::BOOL;
     _value.bvalue = value;
 }
 
-Memo::Memo(const int& value)
+Memo::Memo(const int value)
 {
     _type = Type::INT;
     _value.ivalue = value;
 }
 
-Memo::Memo(const double& value)
+Memo::Memo(const double value)
 {
     _type = Type::DOUBLE;
     _value.dvalue = value;
 }
 
-Memo::Memo(const std::string& value)
+Memo::Memo(const std::string &value)
 {
     _type = Type::STRING;
     _svalue = value;
@@ -52,10 +53,28 @@ Memo::Memo(const char value[])
     _svalue = value;
 }
 
-const Memo::Type& Memo::type() const
+const Memo::Type Memo::type() const
 {
     return _type;
 } 
+
+void Memo::set_type(const Type type)
+{
+    _type = type;
+    switch (type)
+    {
+    case Type::LIST:
+        _dict.clear();
+        break;
+    case Type::DICT:
+        _list.clear();
+        break;
+    default:
+        _dict.clear();
+        _list.clear();
+        break;
+    }
+}
 
 void Memo::reset()
 {
@@ -64,28 +83,28 @@ void Memo::reset()
     _svalue.clear();
 }
 
-void Memo::set(const bool& value)
+void Memo::set(const bool value)
 {
     _type = Type::BOOL;
     _svalue.clear();
     _value.bvalue = value;
 }
 
-void Memo::set(const int& value)
+void Memo::set(const int value)
 {
     _type = Type::INT;
     _svalue.clear();
     _value.ivalue = value;
 }
 
-void Memo::set(const double& value)
+void Memo::set(const double value)
 {
     _type = Type::DOUBLE;
     _svalue.clear();
     _value.dvalue = value;
 }
 
-void Memo::set(const std::string& value)
+void Memo::set(const std::string &value)
 {
     _type = Type::STRING;
     _svalue = value;
@@ -99,13 +118,13 @@ void Memo::set(const char value[])
     _value.ivalue = NULL;
 }
 
-void Memo::set(const Memo& memo)
+void Memo::set(const Memo &memo)
 {
-    _memos = memo._memos;
+    _dict = memo._dict;
+    _list = memo._list;
     _value = memo._value;
     _svalue = memo._svalue;
     _type = memo._type;
-    _node_type = memo._node_type;
 }
 
 void Memo::clear()
@@ -113,42 +132,23 @@ void Memo::clear()
     _type = Type::NONE;
     _svalue.clear();
     _value.ivalue = NULL;
-    _memos.clear();
+    _dict.clear();
+    _list.clear();
 }
 
-bool& Memo::to_bool()
+bool Memo::to_bool() const
 {
     return _value.bvalue;
 }
 
-const bool& Memo::to_bool() const
-{
-    return _value.bvalue;
-}
-
-int& Memo::to_int()
+int Memo::to_int() const
 {
     return _value.ivalue;
 }
 
-const int& Memo::to_int() const
-{
-    return _value.ivalue;
-}
-
-double& Memo::to_double()
+double Memo::to_double() const
 {
     return _value.dvalue;
-}
-
-const double& Memo::to_double() const
-{
-    return _value.dvalue;
-}
-
-std::string& Memo::to_string()
-{
-    return _svalue;
 }
 
 const std::string& Memo::to_string() const
@@ -158,126 +158,113 @@ const std::string& Memo::to_string() const
 
 
 
-Memo& Memo::at(const std::string& key)
+Memo& Memo::operator[](const std::string &key)
 {
+    if (_type != Type::DICT)
+    {
+        throw std::logic_error("This Memo is not dict.");
+    }
     size_t pos = key.find('.');
     if (pos == std::string::npos)
     {
-        if (_memos.find(key) == _memos.end())
+        if (_dict.find(key) == _dict.end())
         {
-            _memos.insert(std::make_pair(key,Memo()));
+            _dict.insert(std::make_pair(key,Memo()));
         }
-        return _memos.at(key);
+        return _dict.at(key);
     }
     else
     {
-        if (_memos.find(key.substr(0,pos)) == _memos.end())
+        if (_dict.find(key.substr(0,pos)) == _dict.end())
         {
-            _memos.insert(std::make_pair(key.substr(0,pos),Memo()));
+            _dict.insert(std::make_pair(key.substr(0,pos),Memo()));
         }
-        return _memos.at(key.substr(0,pos)).at(key.substr(++pos));
+        return _dict.at(key.substr(0,pos))[key.substr(++pos)];
     }
 }
 
-const Memo& Memo::at(const std::string& key) const
+const Memo& Memo::operator[](const std::string &key) const
 {
+    if (_type != Type::DICT)
+    {
+        throw std::logic_error("This Memo is not dict.");
+    }
     size_t pos = key.find('.');
     if (pos == std::string::npos)
     {
-        return _memos.at(key);
+        return _dict.at(key);
     }
     else
     {
-        return _memos.at(key.substr(0,pos)).at(key.substr(++pos));
+        return _dict.at(key.substr(0,pos))[key.substr(++pos)];
     }
 }
 
-Memo& Memo::operator[](const std::string& key)
+Memo& Memo::operator[](const size_t key)
 {
-    size_t pos = key.find('.');
-    if (pos == std::string::npos)
+    if (_type == Type::LIST)
     {
-        if (_memos.find(key) == _memos.end())
-        {
-            _memos.insert(std::make_pair(key,Memo()));
-        }
-        return _memos.at(key);
+        return _list[key];
     }
     else
     {
-        if (_memos.find(key.substr(0,pos)) == _memos.end())
-        {
-            _memos.insert(std::make_pair(key.substr(0,pos),Memo()));
-        }
-        return _memos.at(key.substr(0,pos))[key.substr(++pos)];
+        throw std::logic_error("This Memo is not list.");
     }
 }
 
-const Memo& Memo::operator[](const std::string& key) const
+const Memo& Memo::operator[](const size_t key) const
 {
-    size_t pos = key.find('.');
-    if (pos == std::string::npos)
+    if (_type == Type::LIST)
     {
-        return _memos.at(key);
+        return _list[key];
     }
     else
     {
-        return _memos.at(key.substr(0,pos))[key.substr(++pos)];
+        throw std::logic_error("This Memo is not list.");
     }
 }
 
 
 
-Memo& Memo::at(const size_t& key)
+void Memo::operator=(const Memo &memo)
 {
-    return this->at(std::to_string(key));
-}
-
-const Memo& Memo::at(const size_t& key) const
-{
-    return this->at(std::to_string(key));
-}
-
-Memo& Memo::operator[](const size_t& key)
-{
-    return this->at(std::to_string(key));
-}
-
-const Memo& Memo::operator[](const size_t& key) const
-{
-    return this->at(std::to_string(key));
-}
-
-
-
-void Memo::operator=(const Memo& memo)
-{
-    _memos = memo._memos;
+    _dict = memo._dict;
+    _list = memo._list;
     _value = memo._value;
     _svalue = memo._svalue;
     _type = memo._type;
-    _node_type = memo._node_type;
 }
 
-bool Memo::has(const std::string& key) const
+bool Memo::has(const std::string &key) const
 {
+    if (_type != Type::DICT)
+    {
+        throw std::logic_error("This Memo is not dict.");
+    }
     size_t pos = key.find('.');
     if (pos == std::string::npos)
     {
-        return _memos.find(key) != _memos.end();
+        return _dict.find(key) != _dict.end();
     }
     else
     {
-        return _memos.at(key.substr(0, pos)).has(key.substr(++pos));
+        return _dict.at(key.substr(0, pos)).has(key.substr(++pos));
     }
 }
 
 const size_t Memo::size() const
 {
-    return _memos.size();
+    if (_type == Type::LIST)
+    {
+        return _list.size();
+    }
+    else
+    {
+        throw std::logic_error("This Memo is not list.");
+    }
 }
 
-std::ostream& operator<<(std::ostream& o, const Memo& memo)
+std::ostream& operator<<(std::ostream &o, const Memo &memo)
 {
     switch (memo.type())
     {
@@ -300,115 +287,174 @@ std::ostream& operator<<(std::ostream& o, const Memo& memo)
     return o;
 }
 
-void Memo::insert_void(const std::string& key)
+void Memo::insert_void(const std::string &key)
 {
+    if (_type != Type::DICT)
+    {
+        throw std::logic_error("This Memo is not dict.");
+    }
     size_t pos = key.find('.');
     if (pos == std::string::npos)
     {
-        if (_memos.find(key) == _memos.end())
+        if (_dict.find(key) == _dict.end())
         {
-            _memos.insert(std::make_pair(key, Memo()));
+            _dict.insert(std::make_pair(key, Memo()));
         }
         else
         {
-            _memos.at(key).clear();
+            _dict.at(key).clear();
         }
     }
     else
     {
-        if (_memos.find(key.substr(0, pos)) == _memos.end())
+        if (_dict.find(key.substr(0, pos)) == _dict.end())
         {
-            _memos.insert(std::make_pair(key.substr(0, pos), Memo()));
+            _dict.insert(std::make_pair(key.substr(0, pos), Memo()));
         }
-        _memos.at(key.substr(0, pos)).insert_void(key.substr(++pos));
+        _dict.at(key.substr(0, pos)).insert_void(key.substr(++pos));
     }
 }
 
-void Memo::insert_void(const size_t& key)
+void Memo::insert_void(const size_t index)
 {
-    if (_memos.find(std::to_string(key)) == _memos.end())
+    if (_type == Type::LIST)
     {
-        _memos.insert(std::make_pair(std::to_string(key), Memo()));
+        if (index == _list.size())
+        {
+            _list.emplace_back(Memo());
+        }
+        else
+        {
+            _list.insert(_list.begin() + index, Memo());
+        }
     }
     else
     {
-        _memos.at(std::to_string(key)).clear();
+        throw std::logic_error("This Memo is not list.");
     }
 }
 
-void Memo::set_node_type(const Type& type)
+
+std::map<std::string, Memo>::iterator Memo::begin_dict()
 {
-    if (type == Type::NONE || type == Type::LIST || type == Type::DICT)
-    {
-        _node_type = type;
-    }
+    return _dict.begin();
 }
 
-const Memo::Type& Memo::node_type() const
+std::map<std::string, Memo>::iterator Memo::end_dict()
 {
-    return _node_type;
+    return _dict.end();
+}
+
+std::map<std::string, Memo>::const_iterator Memo::begin_dict() const
+{
+    return _dict.cbegin();
+}
+
+std::map<std::string, Memo>::const_iterator Memo::end_dict() const
+{
+    return _dict.cend();
+}
+
+std::map<std::string, Memo>::const_iterator Memo::cbegin_dict() const
+{
+    return _dict.cbegin();
+}
+
+std::map<std::string, Memo>::const_iterator Memo::cend_dict() const
+{
+    return _dict.cend();
+}
+
+std::map<std::string, Memo>::reverse_iterator Memo::rbegin_dict()
+{
+    return _dict.rbegin();
+}
+
+std::map<std::string, Memo>::reverse_iterator Memo::rend_dict()
+{
+    return _dict.rend();
+}
+
+std::map<std::string, Memo>::const_reverse_iterator Memo::rbegin_dict() const
+{
+    return _dict.crbegin();
+}
+
+std::map<std::string, Memo>::const_reverse_iterator Memo::rend_dict() const
+{
+    return _dict.crend();
+}
+
+std::map<std::string, Memo>::const_reverse_iterator Memo::crbegin_dict() const
+{
+    return _dict.crbegin();
+}
+
+std::map<std::string, Memo>::const_reverse_iterator Memo::crend_dict() const
+{
+    return _dict.crend();
 }
 
 
 
-std::map<std::string, Memo>::iterator Memo::begin()
+std::vector<Memo>::iterator Memo::begin_list()
 {
-    return _memos.begin();
+    return _list.begin();
 }
 
-std::map<std::string, Memo>::iterator Memo::end()
+std::vector<Memo>::iterator Memo::end_list()
 {
-    return _memos.end();
+    return _list.end();
 }
 
-std::map<std::string, Memo>::const_iterator Memo::begin() const
+std::vector<Memo>::const_iterator Memo::begin_list() const
 {
-    return _memos.cbegin();
+    return _list.cbegin();
 }
 
-std::map<std::string, Memo>::const_iterator Memo::end() const
+std::vector<Memo>::const_iterator Memo::end_list() const
 {
-    return _memos.cend();
+    return _list.cend();
 }
 
-std::map<std::string, Memo>::const_iterator Memo::cbegin() const
+std::vector<Memo>::const_iterator Memo::cbegin_list() const
 {
-    return _memos.cbegin();
+    return _list.cbegin();
 }
 
-std::map<std::string, Memo>::const_iterator Memo::cend() const
+std::vector<Memo>::const_iterator Memo::cend_list() const
 {
-    return _memos.cend();
+    return _list.cend();
 }
 
-std::map<std::string, Memo>::reverse_iterator Memo::rbegin()
+std::vector<Memo>::reverse_iterator Memo::rbegin_list()
 {
-    return _memos.rbegin();
+    return _list.rbegin();
 }
 
-std::map<std::string, Memo>::reverse_iterator Memo::rend()
+std::vector<Memo>::reverse_iterator Memo::rend_list()
 {
-    return _memos.rend();
+    return _list.rend();
 }
 
-std::map<std::string, Memo>::const_reverse_iterator Memo::rbegin() const
+std::vector<Memo>::const_reverse_iterator Memo::rbegin_list() const
 {
-    return _memos.crbegin();
+    return _list.crbegin();
 }
 
-std::map<std::string, Memo>::const_reverse_iterator Memo::rend() const
+std::vector<Memo>::const_reverse_iterator Memo::rend_list() const
 {
-    return _memos.crend();
+    return _list.crend();
 }
 
-std::map<std::string, Memo>::const_reverse_iterator Memo::crbegin() const
+std::vector<Memo>::const_reverse_iterator Memo::crbegin_list() const
 {
-    return _memos.crbegin();
+    return _list.crbegin();
 }
 
-std::map<std::string, Memo>::const_reverse_iterator Memo::crend() const
+std::vector<Memo>::const_reverse_iterator Memo::crend_list() const
 {
-    return _memos.crend();
+    return _list.crend();
 }
 
 
@@ -417,13 +463,13 @@ const std::vector<Memo> Memo::dfs() const
     std::vector<Memo> memos;
     std::stack<Memo> stack;
     Memo temp;
-    for (std::map<std::string, Memo>::const_reverse_iterator it = _memos.crbegin(), end = _memos.crend(); it != end; ++it)
+    for (std::map<std::string, Memo>::const_reverse_iterator it = _dict.crbegin(), end = _dict.crend(); it != end; ++it)
     {
         stack.push(it->second);
     }
     while (!stack.empty())
     {
-        if (stack.top().node_type() == Memo::Type::NONE)
+        if (stack.top().type() == Memo::Type::NONE)
         {
             memos.push_back(stack.top());
             stack.pop();
@@ -432,7 +478,7 @@ const std::vector<Memo> Memo::dfs() const
         {
             temp = stack.top();
             stack.pop();
-            for (std::map<std::string, Memo>::const_reverse_iterator it = temp.crbegin(), end = temp.crend(); it != end; ++it)
+            for (std::map<std::string, Memo>::const_reverse_iterator it = temp.crbegin_dict(), end = temp.crend_dict(); it != end; ++it)
             {
                 stack.push(it->second);
             }

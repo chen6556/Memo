@@ -3,34 +3,34 @@
 
 void JsonEncoder::write_list(std::ofstream& output, const Memo& memo, size_t& deep)
 {
-    std::map<std::string, Memo>::const_iterator it = memo.cbegin(), end = memo.cend();
+    std::vector<Memo>::const_iterator it = memo.cbegin_list(), end = memo.cend_list();
     output << '[';
-    if (it->second.node_type() == Memo::Type::NONE)
+    switch (it->type())
     {
-        write_value(output, it->second);
-    }
-    else if (it->second.node_type() == Memo::Type::LIST)
-    {
-        write_list(output, it->second, deep);
-    }
-    else
-    {
-        write_dict(output, it->second, deep);
+    case Memo::Type::DICT:
+        write_dict(output, *it, deep);
+        break;
+    case Memo::Type::LIST:
+        write_list(output, *it, deep);
+        break;
+    default:
+        write_value(output, *it);
+        break;
     }
     while (++it != end)
     {
         output << ", ";
-        if (it->second.node_type() == Memo::Type::NONE)
+        switch (it->type())
         {
-            write_value(output, it->second);
-        }
-        else if (it->second.node_type() == Memo::Type::LIST)
-        {
-            write_list(output, it->second, deep);
-        }
-        else
-        {
-            write_dict(output, it->second, deep);
+        case Memo::Type::DICT:
+            write_dict(output, *it, deep);
+            break;
+        case Memo::Type::LIST:
+            write_list(output, *it, deep);
+            break;
+        default:
+            write_value(output, *it);
+            break;
         }
     }
     output << ']';
@@ -39,24 +39,24 @@ void JsonEncoder::write_list(std::ofstream& output, const Memo& memo, size_t& de
 void JsonEncoder::write_dict(std::ofstream& output, const Memo& memo, size_t& deep)
 {
     ++deep;
-    std::map<std::string, Memo>::const_iterator it = memo.cbegin(), end = memo.cend();
+    std::map<std::string, Memo>::const_iterator it = memo.cbegin_dict(), end = memo.cend_dict();
     output << "{\n";
     for (size_t i = 0; i < deep; ++i)
     {
         output << '\t';
     }
     output << '\"' << it->first << "\" : ";
-    if (it->second.node_type() == Memo::Type::NONE)
+    switch (it->second.type())
     {
-        write_value(output, it->second);
-    }
-    else if (it->second.node_type() == Memo::Type::LIST)
-    {
+    case Memo::Type::DICT:
+        write_dict(output, it->second, deep);
+        break;
+    case Memo::Type::LIST:
         write_list(output, it->second, deep);
-    }
-    else
-    {
-        write_dict(output, it->second,deep);
+        break;
+    default:
+        write_value(output, it->second);
+        break;
     }
     while (++it != end)
     {
@@ -66,17 +66,17 @@ void JsonEncoder::write_dict(std::ofstream& output, const Memo& memo, size_t& de
             output << '\t';
         }
         output << '\"' << it->first << "\" : ";
-        if (it->second.node_type() == Memo::Type::NONE)
+        switch (it->second.type())
         {
-            write_value(output, it->second); 
-        }
-        else if (it->second.node_type() == Memo::Type::LIST)
-        {
-            write_list(output, it->second,deep);
-        }
-        else
-        {
+        case Memo::Type::DICT:
             write_dict(output, it->second, deep);
+            break;
+        case Memo::Type::LIST:
+            write_list(output, it->second, deep);
+            break;
+        default:
+            write_value(output, it->second);
+            break;
         }
     }
     output << '\n';
@@ -112,5 +112,17 @@ void JsonEncoder::write_value(std::ofstream& output, const Memo& memo)
 void JsonEncoder::encode(std::ofstream& output, const Memo& memo)
 {
     size_t deep = 0;
-    write_dict(output, memo, deep);
+    
+    switch (memo.type())
+    {
+    case Memo::Type::DICT:
+        write_dict(output, memo, deep);
+        break;
+    case Memo::Type::LIST:
+        write_list(output, memo, deep);
+        break;
+    default:
+        write_value(output, memo);
+        break;
+    }
 }

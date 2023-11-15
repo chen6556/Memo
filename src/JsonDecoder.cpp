@@ -87,10 +87,24 @@ void JsonDecoder::detect_and_store_digit(std::ifstream& input, Memo *memo)
     switch (std::count(_word.cbegin(), _word.cend(), '.'))
     {
     case 0:
-        memo->insert(_key, std::atoi(_word.c_str()));
+        if (memo->type() == Memo::Type::DICT)
+        {
+            memo->insert(_key, std::atoi(_word.c_str()));
+        }
+        else
+        {
+            memo->append(std::atoi(_word.c_str()));
+        }
         break;
     case 1:
-        memo->insert(_key, std::atof(_word.c_str()));
+        if (memo->type() == Memo::Type::DICT)
+        {
+            memo->insert(_key, std::atof(_word.c_str()));
+        }
+        else
+        {
+            memo->append(std::atof(_word.c_str()));
+        }
         break;
     default:
         _syn = -1;
@@ -142,7 +156,7 @@ void JsonDecoder::reset_syn()
 
 void JsonDecoder::detect_and_store_dict(std::ifstream& input, Memo *memo)
 {
-    memo->set_node_type(Memo::Type::DICT);
+    memo->set_type(Memo::Type::DICT);
     reset_syn();
     while (_syn > 0 && input.get(_current_char))
     {
@@ -154,11 +168,11 @@ void JsonDecoder::detect_and_store_dict(std::ifstream& input, Memo *memo)
             store_value(memo);
             break;
         case 1: // dict
-            detect_and_store_dict(input, &(memo->at(_key)));
+            detect_and_store_dict(input, &(memo->operator[](_key)));
             reset_syn();
             break;
         case 2: // list
-            store_list(input, &(memo->at(_key)));
+            store_list(input, &(memo->operator[](_key)));
             reset_syn();
             break;
         case 3: // key
@@ -209,10 +223,24 @@ void JsonDecoder::store_value(Memo *memo)
     switch (_value_type)
     {
     case 1:
-        memo->insert(_key, _word);
+        if (memo->type() == Memo::Type::DICT)
+        {
+            memo->insert(_key, _word);
+        }
+        else
+        {
+            memo->append(_word);
+        }
         break;
     case 2:
-        memo->insert(_key, _word.length() == 4);
+        if (memo->type() == Memo::Type::DICT)
+        {
+            memo->insert(_key, _word.length() == 4);
+        }
+        else
+        {
+            memo->append(_word.length() == 4);
+        }
         break;
     default:
         break;
@@ -223,7 +251,7 @@ void JsonDecoder::store_value(Memo *memo)
 void JsonDecoder::store_list(std::ifstream& input, Memo *memo)
 {
     size_t count = 0;
-    memo->set_node_type(Memo::Type::LIST);
+    memo->set_type(Memo::Type::LIST);
     while (_syn > 0 && input.get(_current_char))
     {
         switch (classify(_current_char))
@@ -233,22 +261,24 @@ void JsonDecoder::store_list(std::ifstream& input, Memo *memo)
         case 0: // over
             if (!_word.empty())
             {
-                _key = std::to_string(count++);
+                ++count;
                 store_value(memo);
             }
             break;
         case 1: // dict
-            detect_and_store_dict(input, &(memo->at(count++)));
+            memo->insert_void(count);
+            detect_and_store_dict(input, &(memo->operator[](count++)));
             reset_syn();
             break;
         case 2: // list
-            store_list(input, &(memo->at(count++)));
+            memo->insert_void(count);
+            store_list(input, &(memo->operator[](count++)));
             reset_syn();
             break;
         case 4: // ,
             if (!_word.empty())
             {
-                _key = std::to_string(count++);
+                ++count;
                 store_value(memo);
             }
             break;
@@ -256,7 +286,7 @@ void JsonDecoder::store_list(std::ifstream& input, Memo *memo)
             detect_str(input);
             break;
         case 6: // digit
-            _key = std::to_string(count++);
+            ++count;
             detect_and_store_digit(input, memo);
             break;
         case 7: // bool
