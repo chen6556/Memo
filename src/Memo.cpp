@@ -469,7 +469,7 @@ const std::vector<Memo> Memo::dfs() const
     }
     while (!stack.empty())
     {
-        if (stack.top().type() == Memo::Type::NONE)
+        if (stack.top().type() != Memo::Type::DICT && stack.top().type() != Memo::Type::LIST)
         {
             memos.push_back(stack.top());
             stack.pop();
@@ -478,9 +478,19 @@ const std::vector<Memo> Memo::dfs() const
         {
             temp = stack.top();
             stack.pop();
-            for (std::map<std::string, Memo>::const_reverse_iterator it = temp.crbegin_dict(), end = temp.crend_dict(); it != end; ++it)
+            if (temp.type() == Memo::Type::DICT)
             {
-                stack.push(it->second);
+                for (std::map<std::string, Memo>::const_reverse_iterator it = temp.crbegin_dict(), end = temp.crend_dict(); it != end; ++it)
+                {
+                    stack.push(it->second);
+                }
+            }
+            else
+            {
+                for (std::vector<Memo>::const_reverse_iterator it = temp.crbegin_list(), end = temp.crend_list(); it != end; ++it)
+                {
+                    stack.push(*it);
+                }
             }
         }
     }
