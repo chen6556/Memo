@@ -8,11 +8,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/output/)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output/)
+
 include_directories(${PROJECT_SOURCE_DIR}/inc)
 add_subdirectory(${PROJECT_SOURCE_DIR}/src)
 
 add_executable(Memo2 main.cpp ${_SOURCES})
-
+add_library(Memo src/JsonDecoder.cpp src/JsonEncoder.cpp src/Memo.cpp)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
