@@ -1,0 +1,10 @@
+/build
+/output
+
+# 排除clangd缓存
+/.cache
+
+*.json
+*.yaml
+*.log
+*.tlog

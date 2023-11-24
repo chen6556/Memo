@@ -18,6 +18,9 @@ private:
     std::vector<Memo> _list;
     std::map<std::string, Memo> _dict;
 
+private:
+    void expand() {}
+
 public:
     enum Type {NONE, BOOL, INT, DOUBLE, STRING, LIST, DICT} _type = Type::NONE;
     Memo(const Type type = Type::NONE);
@@ -37,6 +40,13 @@ public:
             _list.emplace_back(value);
         }
         _type = Type::LIST;
+    }
+
+    template <typename... Ts>
+    Memo(const Ts&... values)
+    {
+        _type = Type::LIST;
+        expand(values...);
     }
 
     const Type type() const;
@@ -133,6 +143,20 @@ public:
         if (_type == Type::LIST)
         {
             _list.emplace_back(value);
+        }
+        else
+        {
+            throw std::logic_error("This Memo is not list.");
+        }
+    }
+
+    template <typename T, typename... Ts>
+    void expand(const T& value, const Ts&... values)
+    {
+        if (_type == Type::LIST)
+        {
+            _list.emplace_back(value);
+            expand(values...);
         }
         else
         {
