@@ -27,4 +27,12 @@ int main(int, char**)
     {
         std::cout << "Failed" << std::endl;
     }
+
+    Memo data(Memo::Type::DICT);
+    data["nums"] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+    for (auto it = data["nums"].begin_list(), end = data["nums"].end_list(); it != end; ++it)
+    {
+        std::cout << it->to_int() << ' ';
+    }
 }

@@ -28,6 +28,16 @@ public:
     Memo(const double value);
     Memo(const std::string &value);
     Memo(const char value[]);
+    
+    template <typename T>
+    Memo(const std::initializer_list<T> &values)
+    {
+        for (const T& value : values)
+        {
+            _list.emplace_back(value);
+        }
+        _type = Type::LIST;
+    }
 
     const Type type() const;
     void set_type(const Type type);
@@ -66,11 +76,10 @@ public:
     template <typename T>
     void operator=(const std::initializer_list<T> &values)
     {
-        _values.clear();
-        size_t count = 0;
+        _list.clear();
         for (const T& value : values)
         {
-            _value[count++] = value;
+            _list.emplace_back(value);
         }
         _type = Type::LIST;
     }
