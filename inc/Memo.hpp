@@ -117,7 +117,7 @@ public:
         {
             if (_dict.find(key.substr(0, pos)) == _dict.end())
             {
-                _dict.insert(std::make_pair(key.substr(0, pos), Memo()));
+                _dict.insert(std::make_pair(key.substr(0, pos), Memo(Type::DICT)));
             }
             _dict.at(key.substr(0, pos)).insert(key.substr(++pos), value);
         }

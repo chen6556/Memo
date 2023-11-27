@@ -177,7 +177,7 @@ Memo& Memo::operator[](const std::string &key)
     {
         if (_dict.find(key.substr(0,pos)) == _dict.end())
         {
-            _dict.insert(std::make_pair(key.substr(0,pos),Memo()));
+            _dict.insert(std::make_pair(key.substr(0,pos),Memo(Type::DICT)));
         }
         return _dict.at(key.substr(0,pos))[key.substr(++pos)];
     }
